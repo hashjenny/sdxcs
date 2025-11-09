@@ -13,7 +13,7 @@ Dict? entity = null;
 entity = new Dict
 {
     ["_new"] = new Func<string, Dict>(EntityNew),
-    ["_classname"] = "entity",
+    ["_classname"] = "Entity",
     ["parents"] = null,
     ["display"] = new Action<Dict>(EntityDisplay)
 };
@@ -22,7 +22,7 @@ Dict? item = null;
 item = new Dict
 {
     ["_new"] = new Func<string, Dict>(ItemNew),
-    ["_classname"] = "item",
+    ["_classname"] = "Item",
     ["parents"] = new[] { entity }
 };
 
@@ -31,10 +31,13 @@ square = new Dict
 {
     ["_new"] = new Func<string, int, Dict>(SquareNew),
     ["_classname"] = "Square",
+    ["value"] = 0,
     ["parents"] = new[] { shape, item },
     ["perimeter"] = new Func<Dict, double>(SquarePerimeter),
     ["area"] = new Func<Dict, double>(SquareArea),
-    ["larger"] = new Func<Dict, double, bool>(SquareLarger)
+    ["larger"] = new Func<Dict, double, bool>(SquareLarger),
+    ["class_method"] = new Action<Dict>(ClassMethod),
+    ["static_method"] = new Func<string>(StaticMethod)
 };
 
 Dict? circle = null;
@@ -61,8 +64,25 @@ foreach (var example in examples)
     Console.WriteLine($"is {name} larger 10? {isLarger}");
 }
 
+// Multiple Inheritance  多重继承
 Call(examples[0], "display");
-
+// Class Methods and Static Methods
+var s1 = Make(square, "s1", 3);
+var s2 = Make(square, "s2", 4);
+Console.WriteLine($"before | {s1["name"]} value: {((Dict)s1["_class"]!)["value"]}");
+Console.WriteLine($"before | {s2["name"]} value: {((Dict)s2["_class"]!)["value"]}");
+CallClass((Dict)s1["_class"]!, "class_method");
+Console.WriteLine($"after | {s1["name"]} value: {((Dict)s1["_class"]!)["value"]}");
+Console.WriteLine($"after | {s2["name"]} value: {((Dict)s2["_class"]!)["value"]}");
+((Dict)s1["_class"]!)["value"] = 666;
+Console.WriteLine($"after | {s1["name"]} value: {((Dict)s1["_class"]!)["value"]}");
+Console.WriteLine($"after | {s2["name"]} value: {((Dict)s2["_class"]!)["value"]}");
+Console.WriteLine(((Func<string>)square["static_method"]!)());
+// Reporting Type  报告类型
+Console.WriteLine(GetType(examples[0]));
+Console.WriteLine(GetType(examples[1]));
+Console.WriteLine(IsInstance(examples[0], entity));
+Console.WriteLine(IsInstance(examples[1], entity));
 return;
 
 #region Shape
@@ -72,7 +92,8 @@ Dict ShapeNew(string name)
     return new Dict
     {
         ["name"] = name,
-        ["_class"] = shape
+        ["_class"] = shape,
+        ["cache"] = new Dict()
     };
 }
 
@@ -84,6 +105,7 @@ static double ShapeDensity(Dict thing, double weight)
 #endregion
 
 #region Item & Entity
+
 // Multiple Inheritance 
 
 Dict ItemNew(string name)
@@ -106,7 +128,7 @@ Dict EntityNew(string name)
 
 static void EntityDisplay(Dict thing)
 {
-    Console.WriteLine(thing["name"]);
+    Console.WriteLine($"{((Dict)thing["_class"]!)["_classname"]} display: name - {thing["name"]}");
 }
 
 #endregion
@@ -165,6 +187,8 @@ Dict CircleNew(string name, double radius)
 
 #endregion
 
+#region Common
+
 static Dict Make(Dict cls, params object[] args)
 {
     if (!cls.TryGetValue("_new", out var value) || value is not Delegate constructor)
@@ -206,11 +230,27 @@ static dynamic? Call(Dict thing, string methodName, params object[] args)
 
 static object FindMethod(Dict thing, string methodName)
 {
+    if (thing.TryGetValue("cache", out var cache) )
+    {
+        var cacheDict = (Dict)cache!;
+        if (cacheDict.TryGetValue(methodName, out var value))
+        {
+            Console.WriteLine($"Using {methodName} cache");
+            return value!;
+        }
+    }
+    
     if (!thing.TryGetValue("_class", out var myClass) || myClass is not Dict myClassDict)
         throw new ArgumentException("Dict has no key named _class or _class is not a Dict");
 
     var method = FindParent(myClassDict, methodName);
-    return method ?? throw new InvalidOperationException($"{methodName} not found in class hierarchy");
+    if (method is null)
+    {
+        throw new InvalidOperationException($"{methodName} not found in class hierarchy");
+    }
+
+    ((Dict)cache!)[methodName] = method;
+    return method;
 }
 
 static object? FindParent(Dict? dict, string methodName)
@@ -221,10 +261,78 @@ static object? FindParent(Dict? dict, string methodName)
     foreach (var parent in parents)
     {
         var result = FindParent(parent, methodName);
-        if (result is not null)
-        {
-            return result;
-        }
+        if (result is not null) return result;
     }
+
     return null;
 }
+
+#endregion
+
+#region class method & static method
+
+static void ClassMethod(Dict cls)
+{
+    cls["value"] = (int)cls["value"]! + 1;
+}
+
+static void CallClass(Dict cls, string methodName, params object[] args)
+{
+    var method = FindParent(cls, methodName);
+    if (method is Action<Dict> action)
+    {
+        action(cls);
+        return;
+    }
+
+    throw new InvalidOperationException($"{methodName} not found as class method");
+}
+
+static string StaticMethod()
+{
+    return "static method";
+}
+
+#endregion
+
+#region Reporting Type  报告类型
+
+static string GetType(Dict thing)
+{
+    if (thing.TryGetValue("_class", out var value)
+        && value is Dict myClass
+        && myClass.TryGetValue("_classname", out var classname))
+        return (string)classname!;
+    throw new ArgumentException("Dict has no key named _class or _classname");
+}
+
+static bool IsInstance(Dict thing, Dict type)
+{
+    if (thing.TryGetValue("_class", out var value)
+        && value is Dict myClass)
+    {
+        return ParentInstance(myClass, type);
+    }
+    return false;
+}
+
+static bool ParentInstance(Dict cls, Dict type)
+{
+    if ((string)cls["_classname"]! == (string)type["_classname"]!)
+    {
+        return true;
+    }
+
+    if (cls.TryGetValue("parents", out var result)
+        && result is Dict[] parents)
+    {
+        foreach (var p in parents)
+        {
+            if(ParentInstance(p, type)) return true;
+        }
+    }
+
+    return false;
+}
+
+#endregion
