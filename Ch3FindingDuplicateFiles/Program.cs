@@ -77,7 +77,7 @@ int NaiveHash(byte[] data)
 async Task<Dictionary<string, HashSet<string>>> FindGroupsAsync(string dir)
 {
     var filenames = Directory.EnumerateFiles(dir, "tests/*", SearchOption.TopDirectoryOnly).ToArray();
-    var groups = new Dictionary<string, HashSet<string>>();
+    var fileGroups = new Dictionary<string, HashSet<string>>();
     foreach (var filename in filenames)
     {
         var stream = File.OpenRead(filename);
@@ -89,16 +89,16 @@ async Task<Dictionary<string, HashSet<string>>> FindGroupsAsync(string dir)
            hasher.AppendData(buffer.AsSpan(0, bytesRead)); 
         }
         var code = BitConverter.ToString(hasher.GetHashAndReset());
-        if (!groups.TryGetValue(code, out var value))
+        if (!fileGroups.TryGetValue(code, out var value))
         {
             value = [];
-            groups[code] = value;
+            fileGroups[code] = value;
         }
 
         value.Add(filename);
 
     }
-    return groups;
+    return fileGroups;
 }
 
 // Write a function that calculates the SHA-256 hash code of each unique line of a text file.
