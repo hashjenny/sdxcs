@@ -2,10 +2,9 @@ namespace Ch4MatchingPatterns;
 
 // Rewrite the matchers so that a top-level object manages a list of matchers, none of which know about any of the others.
 // 重写匹配器，使顶层对象管理一组匹配器，其中没有任何一个匹配器知道其他任何匹配器。
-public class Manager(List<IMatch> patterns)
+public class Manager(params IMatch[] patterns)
 {
-    public List<IMatch> Patterns { get; } = patterns;
-    // public int CurrentIndex { get; set; } = 0;
+    private List<IMatch> Patterns { get; } = patterns.ToList();
 
     public bool IsMatch(string text)
     {
@@ -26,7 +25,7 @@ public interface IMatch
     int? MatchIndex(string text, int start, Func<int, string, bool> restMatch);
 }
 
-public class Lit(string pattern) : IMatch
+public class LiteralThing(string pattern) : IMatch
 {
     private string Pattern { get; } = pattern;
 
@@ -63,6 +62,18 @@ public class EitherThing(IMatch left, IMatch right) : IMatch
             var end = part.MatchIndex(text, start, restMatch);
             if (end is not null) return end;
         }
+
+        return null;
+    }
+}
+
+public class OneMoreThing : IMatch
+{
+    public int? MatchIndex(string text, int start, Func<int, string, bool> restMatch)
+    {
+        for (var end = start + 1; end <= text.Length; end++)
+            if (restMatch(end, text))
+                return end;
 
         return null;
     }
