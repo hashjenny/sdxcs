@@ -16,7 +16,7 @@ public class Manager(params IMatch[] patterns)
         if (patternIndex >= Patterns.Count) return textIndex == text.Length;
 
         var pattern = Patterns[patternIndex];
-        return pattern.MatchIndex(text, textIndex, (next, text) => MatchFrom(patternIndex + 1, text, next)) is not null;
+        return pattern.MatchIndex(text, textIndex, (next, str) => MatchFrom(patternIndex + 1, str, next)) is not null;
     }
 }
 
@@ -50,14 +50,23 @@ public class Anything : IMatch
     }
 }
 
-public class EitherThing(IMatch left, IMatch right) : IMatch
+public class EitherThing : IMatch
 {
-    private IMatch Left { get; } = left;
-    private IMatch Right { get; } = right;
+    public EitherThing(IMatch left, IMatch right)
+    {
+        Patterns = [left, right];
+    }
+
+    public EitherThing(List<IMatch> patterns)
+    {
+        Patterns = patterns;
+    }
+
+    private List<IMatch> Patterns { get; }
 
     public int? MatchIndex(string text, int start, Func<int, string, bool> restMatch)
     {
-        foreach (var part in new[] { Left, Right })
+        foreach (var part in Patterns)
         {
             var end = part.MatchIndex(text, start, restMatch);
             if (end is not null) return end;
@@ -76,5 +85,34 @@ public class OneMoreThing : IMatch
                 return end;
 
         return null;
+    }
+}
+
+public class CharSetTing(string str) : IMatch
+{
+    private HashSet<char> Set { get; } = str.Select(x => x).ToHashSet();
+
+    public int? MatchIndex(string text, int start, Func<int, string, bool> restMatch)
+    {
+        if (start >= text.Length) return null;
+        if (Set.All(x => x != text[start])) return null;
+        return restMatch(start + 1, text) ? start + 1 : null;
+    }
+}
+
+public class RangeThing(char start, char end) : IMatch
+{
+    private int Start { get; } = start;
+
+    private int End { get; } = end;
+
+    public int? MatchIndex(string text, int start, Func<int, string, bool> restMatch)
+    {
+        if (start >= text.Length) return null;
+
+        var value = (int)text[start];
+        if (value < Start || value > End) return null;
+
+        return restMatch(start + 1, text) ? start + 1 : null;
     }
 }

@@ -33,12 +33,8 @@ public class CharSet : Match
 
     public override int? MatchIndex(string text, int start = 0)
     {
-        var end = start + 1;
-        if (end > text.Length) return null;
-        foreach (var item in Set)
-            if (item == text[end])
-                return Rest.MatchIndex(text, end);
-        return null;
+        if (start >= text.Length) return null;
+        return Set.Any(item => item == text[start]) ? Rest.MatchIndex(text, start + 1) : null;
     }
 }
 
@@ -56,11 +52,10 @@ public class Range : Match
 
     public override int? MatchIndex(string text, int start = 0)
     {
-        var end = start + 1;
-        if (end > text.Length) return null;
-        var value = (int)text[end];
+        if (start >= text.Length) return null;
+        var value = (int)text[start];
         if (value >= Start && value <= End)
-            return Rest.MatchIndex(text, end);
+            return Rest.MatchIndex(text, start + 1);
         return null;
     }
 }

@@ -167,6 +167,110 @@ public class MatchEx1Test
     }
 
     #endregion
-    
-    
+
+    #region CharSet
+
+    [Fact]
+    public void test_charset_all_empty()
+    {
+        // [] doesn't match ""
+        Assert.False(new Manager(new CharSetTing("")).IsMatch(""));
+    }
+
+    [Fact]
+    public void test_charset_empty()
+    {
+        // [asd] doesn't match ""
+        Assert.False(new Manager(new CharSetTing("asd")).IsMatch(""));
+    }
+
+    [Fact]
+    public void test_charset_not_match()
+    {
+        // [asd] doesn't match "z"
+        Assert.False(new Manager(new CharSetTing("asd")).IsMatch("z"));
+    }
+
+    [Fact]
+    public void test_charset_simple_match()
+    {
+        // [asd] matches "a"
+        Assert.True(new Manager(new CharSetTing("asd")).IsMatch("a"));
+    }
+
+    [Fact]
+    public void test_charset_prefix()
+    {
+        // [asd]s matches "as"
+        Assert.True(new Manager(new CharSetTing("asd"), new LiteralThing("s")).IsMatch("as"));
+    }
+
+    [Fact]
+    public void test_charset_prefix_not_match()
+    {
+        // [asd]s doesn't match "bs"
+        Assert.False(new Manager(new CharSetTing("asd"), new LiteralThing("s")).IsMatch("bs"));
+    }
+
+    [Fact]
+    public void test_charset_subfix()
+    {
+        // a[asd] matches "as"
+        Assert.True(new Manager(new LiteralThing("a"), new CharSetTing("asd")).IsMatch("as"));
+    }
+
+    #endregion
+
+    #region Range
+
+    [Fact]
+    public void test_RangeTing_empty()
+    {
+        // [d-m] doesn't match ""
+        Assert.False(new Manager(new RangeThing('d', 'm')).IsMatch(""));
+    }
+
+    [Fact]
+    public void test_RangeTing_not_match()
+    {
+        // [d-m] doesn't match "z"
+        Assert.False(new Manager(new RangeThing('d', 'm')).IsMatch("z"));
+    }
+
+    [Fact]
+    public void test_RangeTing_simple_match()
+    {
+        // [d-m] matches "j"
+        Assert.True(new Manager(new RangeThing('d', 'm')).IsMatch("j"));
+    }
+
+    [Fact]
+    public void test_RangeTing_prefix()
+    {
+        // [d-m]s matches "gs"
+        Assert.True(new Manager(new RangeThing('d', 'm'), new LiteralThing("s")).IsMatch("gs"));
+    }
+
+    [Fact]
+    public void test_RangeTing_prefix_not_match()
+    {
+        // [d-m]s doesn't match "bs"
+        Assert.False(new Manager(new RangeThing('d', 'm'), new LiteralThing("s")).IsMatch("bs"));
+    }
+
+    [Fact]
+    public void test_RangeTing_subfix()
+    {
+        // a[d-m] matches "ak"
+        Assert.True(new Manager(new LiteralThing("a"), new RangeThing('d', 'm')).IsMatch("ak"));
+    }
+
+    [Fact]
+    public void test_RangeTing_subfix_not_match()
+    {
+        // a[d-m] doesn't match "as"
+        Assert.False(new Manager(new LiteralThing("a"), new RangeThing('d', 'm')).IsMatch("as"));
+    }
+
+    #endregion
 }
