@@ -6,7 +6,7 @@ namespace Ch4MatchingPatterns;
 // 例如， Not(Lit("abc")) 只有在文本不是“abc”时才成功
 public class Not : Match
 {
-    public Not(Match pattern, Match? rest)
+    public Not(Match pattern, Match? rest = null)
     {
         Pattern = pattern;
         Rest = rest ?? new Null();
@@ -16,7 +16,12 @@ public class Not : Match
 
     public override int? MatchIndex(string text, int start = 0)
     {
-        var end = Pattern.MatchIndex(text, start);
-        return end is null ? end : null;
+        var result = Pattern.MatchIndex(text, start);
+        if (result is not null)
+        {
+            return null;
+        }
+
+        return Rest.MatchIndex(text, start);
     }
 }

@@ -2,7 +2,7 @@ namespace Ch4MatchingPatterns;
 
 public abstract class Match
 {
-    protected Match Rest { get; init; }
+    protected Match Rest { get; set; }
 
     public bool IsMatch(string text)
     {
@@ -11,6 +11,12 @@ public abstract class Match
     }
 
     public abstract int? MatchIndex(string text, int start = 0);
+
+    protected Match AddRest(Match pattern)
+    {
+        pattern.Rest = Rest;
+        return pattern;
+    }
 }
 
 public class Null : Match

@@ -88,7 +88,7 @@ public class OneMoreThing : IMatch
     }
 }
 
-public class CharSetTing(string str) : IMatch
+public class CharSetThing(string str) : IMatch
 {
     private HashSet<char> Set { get; } = str.Select(x => x).ToHashSet();
 
@@ -114,5 +114,18 @@ public class RangeThing(char start, char end) : IMatch
         if (value < Start || value > End) return null;
 
         return restMatch(start + 1, text) ? start + 1 : null;
+    }
+}
+
+public class NotThing(IMatch pattern) : IMatch
+{
+    private IMatch Pattern { get; } = pattern;
+
+    public int? MatchIndex(string text, int start, Func<int, string, bool> restMatch)
+    {
+        var result = Pattern.MatchIndex(text, start, (next, str) => true);
+        if (result is not null) return null;
+
+        return restMatch(start, text) ? start : null;
     }
 }

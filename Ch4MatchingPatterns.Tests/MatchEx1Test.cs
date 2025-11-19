@@ -174,49 +174,49 @@ public class MatchEx1Test
     public void test_charset_all_empty()
     {
         // [] doesn't match ""
-        Assert.False(new Manager(new CharSetTing("")).IsMatch(""));
+        Assert.False(new Manager(new CharSetThing("")).IsMatch(""));
     }
 
     [Fact]
     public void test_charset_empty()
     {
         // [asd] doesn't match ""
-        Assert.False(new Manager(new CharSetTing("asd")).IsMatch(""));
+        Assert.False(new Manager(new CharSetThing("asd")).IsMatch(""));
     }
 
     [Fact]
     public void test_charset_not_match()
     {
         // [asd] doesn't match "z"
-        Assert.False(new Manager(new CharSetTing("asd")).IsMatch("z"));
+        Assert.False(new Manager(new CharSetThing("asd")).IsMatch("z"));
     }
 
     [Fact]
     public void test_charset_simple_match()
     {
         // [asd] matches "a"
-        Assert.True(new Manager(new CharSetTing("asd")).IsMatch("a"));
+        Assert.True(new Manager(new CharSetThing("asd")).IsMatch("a"));
     }
 
     [Fact]
     public void test_charset_prefix()
     {
         // [asd]s matches "as"
-        Assert.True(new Manager(new CharSetTing("asd"), new LiteralThing("s")).IsMatch("as"));
+        Assert.True(new Manager(new CharSetThing("asd"), new LiteralThing("s")).IsMatch("as"));
     }
 
     [Fact]
     public void test_charset_prefix_not_match()
     {
         // [asd]s doesn't match "bs"
-        Assert.False(new Manager(new CharSetTing("asd"), new LiteralThing("s")).IsMatch("bs"));
+        Assert.False(new Manager(new CharSetThing("asd"), new LiteralThing("s")).IsMatch("bs"));
     }
 
     [Fact]
     public void test_charset_subfix()
     {
         // a[asd] matches "as"
-        Assert.True(new Manager(new LiteralThing("a"), new CharSetTing("asd")).IsMatch("as"));
+        Assert.True(new Manager(new LiteralThing("a"), new CharSetThing("asd")).IsMatch("as"));
     }
 
     #endregion
@@ -270,6 +270,112 @@ public class MatchEx1Test
     {
         // a[d-m] doesn't match "as"
         Assert.False(new Manager(new LiteralThing("a"), new RangeThing('d', 'm')).IsMatch("as"));
+    }
+
+    #endregion
+
+    #region Not
+
+    [Fact]
+    public void test_not_all_empty()
+    {
+        // ^"" !=> ""
+        Assert.False(new Manager(new NotThing(new LiteralThing(""))).IsMatch(""));
+    }
+
+    [Fact]
+    public void test_not_empty()
+    {
+        // ^"aaa" => ""
+        Assert.True(new Manager(new NotThing(new LiteralThing("aaa"))).IsMatch(""));
+    }
+
+    [Fact]
+    public void test_not_empty2()
+    {
+        // ^""  => "aaa"
+        Assert.False(new Manager(new NotThing(new LiteralThing(""))).IsMatch("aaa"));
+    }
+    
+    [Fact]
+    public void test_charset__not_match()
+    {
+        // ^[asd]z => "z"
+        Assert.True(new Manager(new NotThing(new CharSetThing("asd")),new LiteralThing("z")).IsMatch("z"));
+    }
+
+    [Fact]
+    public void test_not_literal_match()
+    {
+        // not "a"b matches "b"
+        Assert.True(new Manager(new NotThing(new LiteralThing("a")), new LiteralThing("b")).IsMatch("b"));
+        
+    }
+
+    [Fact]
+    public void test_not_literal_not_match()
+    {
+        // not "a" doesn't match "a"
+        Assert.False(new Manager(new NotThing(new LiteralThing("a"))).IsMatch("a"));
+    }
+
+    [Fact]
+    public void test_not_charset_not_match()
+    {
+        // not [asd] doesn't match "a"
+        Assert.False(new Manager(new NotThing(new CharSetThing("asd"))).IsMatch("a"));
+    }
+
+    [Fact]
+    public void test_not_charset_prefix_match()
+    {
+        // not [asd]s !=> "bs"
+        Assert.False(new Manager(new NotThing(new CharSetThing("asd")), new LiteralThing("s")).IsMatch("bs"));
+    }
+
+    [Fact]
+    public void test_not_charset_prefix_not_match()
+    {
+        // not [asd]s doesn't match "as" (because [asd]s matches "as")
+        Assert.False(new Manager(new NotThing(new CharSetThing("asd")), new LiteralThing("s")).IsMatch("as"));
+    }
+
+    [Fact]
+    public void test_not_subfix_match_and_not_match()
+    {
+        // a[asd] matches "as", so not a[asd] should not match "as"
+        var manager = new Manager(new NotThing(new LiteralThing("a")), new CharSetThing("asd"));
+        Assert.False(manager.IsMatch("as"));
+    }
+
+    [Fact]
+    public void test_double_not_behaviour()
+    {
+        // double negation: not(not "a") should behave like "a"
+        var doubleNot = new Manager(new NotThing(new NotThing(new LiteralThing("a"))));
+        Assert.False(doubleNot.IsMatch("a"));
+        Assert.False(doubleNot.IsMatch("b")); 
+    }
+
+    [Fact]
+    public void test_either_not()
+    {
+        // not aa|bba !=> bba 
+        Assert.False(new Manager(new NotThing(new EitherThing(new LiteralThing("aa"), new LiteralThing("bba")))).IsMatch("bba"));
+    }
+
+    [Fact]
+    public void test_range_not()
+    {
+        // not [a-v] ... => z
+        Assert.True(new Manager(new NotThing(new RangeThing('a', 'v')), new Anything()).IsMatch("z"));
+    }
+    
+    [Fact]
+    public void test_range_not2()
+    {
+        // not [a-v] ... !=> g
+        Assert.False(new Manager(new NotThing(new RangeThing('a', 'v')), new Anything()).IsMatch("g"));
     }
 
     #endregion
