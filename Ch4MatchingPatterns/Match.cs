@@ -2,7 +2,7 @@ namespace Ch4MatchingPatterns;
 
 public abstract class Match
 {
-    protected Match Rest { get; set; }
+    protected Match Rest { get; init; }
 
     public bool IsMatch(string text)
     {
@@ -11,12 +11,6 @@ public abstract class Match
     }
 
     public abstract int? MatchIndex(string text, int start = 0);
-
-    protected Match AddRest(Match pattern)
-    {
-        pattern.Rest = Rest;
-        return pattern;
-    }
 }
 
 public class Null : Match
@@ -59,17 +53,32 @@ public class Any : Match
         Rest = rest ?? new Null();
     }
 
-    public override int? MatchIndex(string text, int start = 0)
+    [Obsolete("This method is deprecated. ")]
+    public int? MatchIndexOld(string text, int start = 0)
     {
         // 因为索引表示的是字符之间的位置（从 0 到 text.Length），所以结束位置需要包含 text.Length 本身。
         // 举例：对于 "abc"，有效的位置是 0,1,2,3（3 表示在末尾），Any 要尝试从 start 到包括 text.Length 的所有结束位置，
         // 才能允许匹配 0 个字符或匹配到结尾。
-        foreach (var i in Enumerable.Range(start, text.Length + 1 - start))
+        for (var i = start; i <= text.Length; i++)
         {
             var end = Rest.MatchIndex(text, i);
             if (end == text.Length) return end;
         }
 
+        return null;
+    }
+
+    // Rewrite Any so that it does not repeatedly re-match text.
+    // 重写 Any ，使其不再重复匹配文本。
+    public override int? MatchIndex(string text, int start = 0)
+    {
+        for (var i = text.Length; i >= start; i--)
+        {
+            var end = Rest.MatchIndex(text, i);
+            if (end == text.Length)
+                return end;
+        }
+    
         return null;
     }
 }
