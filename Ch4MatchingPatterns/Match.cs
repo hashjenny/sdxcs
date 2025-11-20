@@ -1,5 +1,11 @@
 namespace Ch4MatchingPatterns;
 
+public enum MatchOption
+{
+    Lazy,
+    Greedy
+}
+
 public class MatchResult(int end, IEnumerable<string>? captures = null)
 {
     public int End { get; } = end;
@@ -63,10 +69,13 @@ public class Literal : Match
 
 public class Any : Match
 {
-    public Any(Match? rest = null)
+    public Any(Match? rest = null, MatchOption option = MatchOption.Lazy)
     {
         Rest = rest ?? new Null();
+        Option = option;
     }
+
+    public MatchOption Option { get; }
 
     public override MatchResult? MatchIndex(string text, int start = 0)
     {
@@ -80,16 +89,38 @@ public class Any : Match
             return new MatchResult(text.Length, list);
         }
 
-        for (var i = start; i <= text.Length; i++)
+        switch (Option)
         {
-            var result = Rest.MatchIndex(text, i);
-            if (result is null) continue;
+            case MatchOption.Lazy:
+                for (var i = start; i <= text.Length; i++)
+                {
+                    var result = Rest.MatchIndex(text, i);
+                    if (result is null) continue;
 
-            var captured = text[start..i];
-            var captures = new List<string> { captured };
-            captures.AddRange(result.Captures);
-            return new MatchResult(result.End, captures);
+                    var captured = text[start..i];
+                    var captures = new List<string> { captured };
+                    captures.AddRange(result.Captures);
+                    return new MatchResult(result.End, captures);
+                }
+
+                break;
+            case MatchOption.Greedy:
+                for (var i = text.Length; i >= start; i--)
+                {
+                    var result = Rest.MatchIndex(text, i);
+                    if (result is null) continue;
+
+                    var captured = text[start..i];
+                    var captures = new List<string> { captured };
+                    captures.AddRange(result.Captures);
+                    return new MatchResult(result.End, captures);
+                }
+
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
+
 
         return null;
     }
