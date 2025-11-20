@@ -31,10 +31,17 @@ public class CharSet : Match
 
     private HashSet<char> Set { get; }
 
-    public override int? MatchIndex(string text, int start = 0)
+    public override MatchResult? MatchIndex(string text, int start = 0)
     {
         if (start >= text.Length) return null;
-        return Set.Any(item => item == text[start]) ? Rest.MatchIndex(text, start + 1) : null;
+        if (!Set.TryGetValue(text[start], out var value)) return null;
+
+        var result = Rest.MatchIndex(text, start + 1);
+        if (result is null) return null;
+
+        var captures = new List<string> { value.ToString() };
+        captures.AddRange(result.Captures);
+        return new MatchResult(result.End, captures);
     }
 }
 
@@ -50,12 +57,17 @@ public class Range : Match
     private int Start { get; }
     private int End { get; }
 
-    public override int? MatchIndex(string text, int start = 0)
+    public override MatchResult? MatchIndex(string text, int start = 0)
     {
         if (start >= text.Length) return null;
         var value = (int)text[start];
-        if (value >= Start && value <= End)
-            return Rest.MatchIndex(text, start + 1);
-        return null;
+        if (value < Start || value > End) return null;
+
+        var result = Rest.MatchIndex(text, start + 1);
+        if (result is null) return null;
+
+        var captures = new List<string> { text[start].ToString() };
+        captures.AddRange(result.Captures);
+        return new MatchResult(result.End, captures);
     }
 }

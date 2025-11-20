@@ -1,4 +1,3 @@
-
 namespace Ch4MatchingPatterns.Tests;
 
 public class MatchTest
@@ -89,7 +88,7 @@ public class MatchTest
         // {a, b} matches "a"
         Assert.True(new Either(new Literal("a"), new Literal("b")).IsMatch("a"));
     }
-    
+
     [Fact]
     public void test_either_two_literals_not_both()
     {
@@ -112,9 +111,6 @@ public class MatchTest
         Assert.False(new Either(new Literal("a"), new Literal("b"), new Literal("c"))
             .IsMatch("ax"));
     }
- 
 
     #endregion
-    
-    
 }

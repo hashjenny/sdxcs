@@ -9,13 +9,25 @@ public class OneMore : Match
         Rest = rest ?? new Null();
     }
 
-    public override int? MatchIndex(string text, int start = 0)
+    public override MatchResult? MatchIndex(string text, int start = 0)
     {
         if (text.Length <= start) return null;
-        foreach (var i in Enumerable.Range(start + 1, text.Length + 1 - start))
+        if (Rest is Null)
         {
-            var end = Rest.MatchIndex(text, i);
-            if (end == text.Length) return end;
+            var end = text.Length;
+            var list = new List<string> { text[start..] };
+            return new MatchResult(text.Length, list);
+        }
+
+        for (var i = start + 1; i <= text.Length; i++)
+        {
+            var result = Rest.MatchIndex(text, i);
+            if (result is null) continue;
+
+            var captured = text[start..i];
+            var captures = new List<string> { captured };
+            captures.AddRange(result.Captures);
+            return new MatchResult(result.End, captures);
         }
 
         return null;

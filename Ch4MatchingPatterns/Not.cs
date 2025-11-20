@@ -14,14 +14,16 @@ public class Not : Match
 
     private Match Pattern { get; }
 
-    public override int? MatchIndex(string text, int start = 0)
+    public override MatchResult? MatchIndex(string text, int start = 0)
     {
         var result = Pattern.MatchIndex(text, start);
-        if (result is not null)
-        {
-            return null;
-        }
+        if (result is not null) return null;
 
-        return Rest.MatchIndex(text, start);
+        var restResult = Rest.MatchIndex(text, start);
+        if (restResult is null) return null;
+
+        var captures = new List<string> { string.Empty };
+        captures.AddRange(restResult.Captures);
+        return new MatchResult(restResult.End, captures);
     }
 }
