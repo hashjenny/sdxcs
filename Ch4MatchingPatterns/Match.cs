@@ -12,9 +12,18 @@ public class MatchResult(int end, IEnumerable<string>? captures = null)
     public List<string> Captures { get; } = captures is null ? [] : [..captures];
 }
 
-public abstract class Match
+public abstract class Match : IEquatable<Match>
 {
     protected Match Rest { get; init; }
+
+    public virtual bool Equals(Match? other)
+    {
+        if (other is null) return false;
+
+        if (GetType() != other.GetType()) return false;
+
+        return Rest == other.Rest;
+    }
 
     private MatchResult? GetMatchResult(string text)
     {
@@ -28,6 +37,27 @@ public abstract class Match
     }
 
     public abstract MatchResult? MatchIndex(string text, int start = 0);
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as Match);
+    }
+
+    public override int GetHashCode()
+    {
+        return Rest?.GetHashCode() ?? 0;
+    }
+
+    public static bool operator ==(Match? left, Match? right)
+    {
+        if (left is null) return right is null;
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(Match left, Match right)
+    {
+        return !(left == right);
+    }
 }
 
 public class Null : Match
@@ -40,6 +70,17 @@ public class Null : Match
     public override MatchResult? MatchIndex(string text, int start = 0)
     {
         return new MatchResult(start);
+    }
+
+    public override bool Equals(Match? other)
+    {
+        if (other is not Null) return false;
+        return base.Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return base.GetHashCode();
     }
 }
 
@@ -64,6 +105,19 @@ public class Literal : Match
         var captures = new List<string> { text[start..end] };
         captures.AddRange(result.Captures);
         return new MatchResult(result.End, captures);
+    }
+
+    public override bool Equals(Match? other)
+    {
+        if (!base.Equals(other)) return false;
+
+        var literal = other as Literal;
+        return Pattern == literal?.Pattern;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(base.GetHashCode(), Pattern);
     }
 }
 
@@ -118,7 +172,7 @@ public class Any : Match
 
                 break;
             default:
-                throw new ArgumentOutOfRangeException();
+                throw new Exception("Unknown Match Option");
         }
 
 
@@ -172,5 +226,21 @@ public class Either : Match
         }
 
         return null;
+    }
+
+    public override bool Equals(Match? other)
+    {
+        if (!base.Equals(other)) return false;
+
+        var either = other as Either;
+        return either?.Patterns != null && Patterns.SetEquals(either.Patterns);
+    }
+
+    public override int GetHashCode()
+    {
+        var hash = base.GetHashCode();
+
+        return Patterns.OrderBy(p => p.GetHashCode())
+            .Aggregate(hash, (current, pattern) => HashCode.Combine(current, pattern.GetHashCode()));
     }
 }
