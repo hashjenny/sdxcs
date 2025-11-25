@@ -30,7 +30,7 @@ public class ParsingTextTest
     public void test_parse_either_two_lit()
     {
         var result = new Tokenizer().Process("{abc,def}");
-        var actual = Parser.parse(result) as Either;
+        var actual = Parser.Parse(result) as Either;
         var expect = new Either([new Literal("abc"), new Literal("def")]);
         Assert.True(expect == actual);
     }
@@ -86,7 +86,7 @@ public class ParsingTextTest
     public void test_ex2_charset2()
     {
         var t = new Tokenizer().Process("[qwe]");
-        var actual = Parser.parse(t) as Either;
+        var actual = Parser.Parse(t) as Either;
         var expect = new Either([new Literal("q"), new Literal("w"), new Literal("e")]);
         Assert.True(expect == actual);
     }
@@ -108,5 +108,21 @@ public class ParsingTextTest
         Assert.Equal(expected, t);
     }
 
-
+    
+    [Fact]
+    public void test_ex4_list()
+    {
+        var ex = Record.Exception(() => new NestedList().Process("{1,2,3}"));
+        Assert.NotNull(ex);
+    }
+    
+    [Fact]
+    public void test_ex4_list2()
+    {
+        var result = new ListParser("[1, [2, [3, 4], 5]]").Parse();
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count);
+        var str = ListParser.FormatList(result);
+        Assert.Equal("1, 2, 3, 4, 5", str);
+    }
 }

@@ -63,14 +63,14 @@ public class Tokenizer
                         IsEscape = true;
                         break;
                     case '*':
-                        addToken(Token.Any);
+                        AddToken(Token.Any);
                         break;
                     case '{':
                         IsInner = true;
-                        addToken(Token.EitherStart);
+                        AddToken(Token.EitherStart);
                         break;
                     case ',':
-                        addToken(null);
+                        AddToken(null);
                         break;
                     case '}':
                         IsInner = false;
@@ -79,18 +79,18 @@ public class Tokenizer
                         Results.Add((Token.EitherStart, (SubCount + 1).ToString()));
                         Results.AddRange(sub);
                         SubCount = 0;
-                        addToken(Token.EitherEnd);
+                        AddToken(Token.EitherEnd);
                         break;
                     case '[':
                         IsInner = true;
                         IsCharSet2 = true;
-                        addToken(Token.EitherStart);
+                        AddToken(Token.EitherStart);
                         break;
                     case '!':
                         IsCharSet2 = false;
                         IsNegation = true;
                         Results.RemoveAt(Results.Count - 1);
-                        addToken(Token.NotCharSetStart);
+                        AddToken(Token.NotCharSetStart);
                         break;
                     case ']':
                     {
@@ -104,7 +104,7 @@ public class Tokenizer
                             Results.AddRange(slice);
                             SubCount = 0;
 
-                            addToken(Token.NotCharSetEnd);
+                            AddToken(Token.NotCharSetEnd);
                         }
 
                         if (IsCharSet2)
@@ -113,7 +113,7 @@ public class Tokenizer
                             Results.Add((Token.EitherStart, SubCount.ToString()));
                             Results.AddRange(slice);
                             SubCount = 0;
-                            addToken(Token.EitherEnd);
+                            AddToken(Token.EitherEnd);
                         }
 
                         break;
@@ -123,7 +123,7 @@ public class Tokenizer
                         if (AllChars.Contains(ch))
                         {
                             Current += ch;
-                            if (IsCharSet2 || IsNegation) addToken(null);
+                            if (IsCharSet2 || IsNegation) AddToken(null);
                         }
                         else
                         {
@@ -135,17 +135,19 @@ public class Tokenizer
                 }
             }
 
-        addToken(null);
+        AddToken(null);
         return Results;
     }
 
-    private void addToken(Token? token)
+
+    private void AddToken(Token? token)
     {
         if (Current.Length > 0)
         {
             Results.Add((Token.Literal, Current));
             Current = string.Empty;
-            if (IsInner && token is not Token.EitherStart or Token.NotCharSetStart) SubCount++;
+            if (IsInner 
+                && token is not (Token.EitherStart or Token.NotCharSetStart)) SubCount++;
         }
 
         if (token is not null) Results.Add((token.Value, null));
@@ -154,7 +156,7 @@ public class Tokenizer
 
 public static class Parser
 {
-    public static Match parse(List<(Token, string?)> list)
+    public static Match Parse(List<(Token, string?)> list)
     {
         if (list.Count == 0) return new Null();
 
@@ -162,25 +164,25 @@ public static class Parser
         var restList = list[1..];
         return current.Item1 switch
         {
-            Token.Any => parseAny(current.Item2, restList),
-            Token.Literal => parseLiteral(current.Item2, restList),
-            Token.EitherStart => parseEitherStart(current.Item2, restList),
-            Token.NotCharSetStart => parseNotCharSetStart(current.Item2, restList),
+            Token.Any => ParseAny(current.Item2, restList),
+            Token.Literal => ParseLiteral(current.Item2, restList),
+            Token.EitherStart => ParseEitherStart(current.Item2, restList),
+            Token.NotCharSetStart => ParseNotCharSetStart(current.Item2, restList),
             _ => throw new ArgumentException("Unknown token type")
         };
     }
 
-    private static Any parseAny(string? text, List<(Token, string?)> restList)
+    private static Any ParseAny(string? text, List<(Token, string?)> restList)
     {
-        return new Any(parse(restList));
+        return new Any(Parse(restList));
     }
 
-    private static Literal parseLiteral(string? text, List<(Token, string?)> restList)
+    private static Literal ParseLiteral(string? text, List<(Token, string?)> restList)
     {
-        return new Literal(text ?? string.Empty, parse(restList));
+        return new Literal(text ?? string.Empty, Parse(restList));
     }
 
-    private static Either parseEitherStart(string? text, List<(Token, string?)> restList)
+    private static Either ParseEitherStart(string? text, List<(Token, string?)> restList)
     {
         HashSet<Match> patterns = [];
         if (int.TryParse(text, out var size))
@@ -197,10 +199,10 @@ public static class Parser
 
         var rest = restList.Count > size + 2 ? restList[(size + 2)..] : [];
 
-        return new Either(patterns, parse(rest));
+        return new Either(patterns, Parse(rest));
     }
 
-    private static NotCharSet parseNotCharSetStart(string? text, List<(Token, string?)> restList)
+    private static NotCharSet ParseNotCharSetStart(string? text, List<(Token, string?)> restList)
     {
         StringBuilder patterns = new();
         if (int.TryParse(text, out var size))
@@ -217,6 +219,6 @@ public static class Parser
 
         var rest = restList.Count > size + 2 ? restList[(size + 2)..] : [];
 
-        return new NotCharSet(patterns.ToString(), parse(rest));
+        return new NotCharSet(patterns.ToString(), Parse(rest));
     }
 }
