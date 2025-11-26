@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ch5ParsingText", "Ch5Parsin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ch5ParsingText.Tests", "Ch5ParsingText.Tests\Ch5ParsingText.Tests.csproj", "{2B00EA11-6AFF-4419-A1DA-E28AADB51A7B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ch6RunningTests", "Ch6RunningTests\Ch6RunningTests.csproj", "{D48BCCB1-7784-49DA-8768-111C72086AE3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{2B00EA11-6AFF-4419-A1DA-E28AADB51A7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B00EA11-6AFF-4419-A1DA-E28AADB51A7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B00EA11-6AFF-4419-A1DA-E28AADB51A7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D48BCCB1-7784-49DA-8768-111C72086AE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D48BCCB1-7784-49DA-8768-111C72086AE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D48BCCB1-7784-49DA-8768-111C72086AE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D48BCCB1-7784-49DA-8768-111C72086AE3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
