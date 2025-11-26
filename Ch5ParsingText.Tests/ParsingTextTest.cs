@@ -108,14 +108,14 @@ public class ParsingTextTest
         Assert.Equal(expected, t);
     }
 
-    
+
     [Fact]
     public void test_ex4_list()
     {
         var ex = Record.Exception(() => new NestedList().Process("{1,2,3}"));
         Assert.NotNull(ex);
     }
-    
+
     [Fact]
     public void test_ex4_list2()
     {
@@ -124,5 +124,43 @@ public class ParsingTextTest
         Assert.Equal(2, result.Count);
         var str = ListParser.FormatList(result);
         Assert.Equal("1, 2, 3, 4, 5", str);
+    }
+
+    [Fact]
+    public void test_ex5_calc1()
+    {
+        var result = new CalcTokenizer("1+  2 * 3.2 / 4");
+        Assert.NotNull(result);
+        var parser = result.Parser();
+        Assert.NotNull(parser);
+        Assert.Equal(3, parser.Count);
+    }
+
+    [Fact]
+    public void test_ex5_calc2()
+    {
+        var result = new CalcTokenizer("1+  2 * 3.2 / 4");
+        Assert.Equal(2.6, result.Calculate());
+    }
+
+    [Fact]
+    public void test_ex5_calc3()
+    {
+        var result = new CalcTokenizer("1 + 2 * 3");
+        Assert.Equal(7, result.Calculate());
+    }
+
+    [Fact]
+    public void test_ex5_calc4()
+    {
+        var result = new CalcTokenizer("1 + 2 +3");
+        Assert.Equal(6, result.Calculate());
+    }
+
+    [Fact]
+    public void test_ex5_calc5()
+    {
+        var result = new CalcTokenizer("1 + 2 +3 * 4 + 5 *6");
+        Assert.Equal(45, result.Calculate());
     }
 }
