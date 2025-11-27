@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="Ch2ObjectsAndClasses/Ch2ObjectsAndClasses.csproj" />
+  <Project Path="Ch3FindingDuplicateFiles/Ch3FindingDuplicateFiles.csproj" />
+  <Project Path="Ch4MatchingPatterns.Tests/Ch4MatchingPatterns.Tests.csproj" />
+  <Project Path="Ch4MatchingPatterns/Ch4MatchingPatterns.csproj" />
+  <Project Path="Ch5ParsingText.Tests/Ch5ParsingText.Tests.csproj" />
+  <Project Path="Ch5ParsingText/Ch5ParsingText.csproj" />
+  <Project Path="Ch6RunningTests/Ch6RunningTests.csproj" />
+</Solution>
