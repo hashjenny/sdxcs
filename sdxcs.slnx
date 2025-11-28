@@ -6,4 +6,5 @@
   <Project Path="Ch5ParsingText.Tests/Ch5ParsingText.Tests.csproj" />
   <Project Path="Ch5ParsingText/Ch5ParsingText.csproj" />
   <Project Path="Ch6RunningTests/Ch6RunningTests.csproj" />
+  <Project Path="Ch7Interpreter/Ch7Interpreter.csproj" />
 </Solution>
