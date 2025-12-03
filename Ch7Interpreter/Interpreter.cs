@@ -10,9 +10,11 @@ namespace Ch7Interpreter;
 public static class Interpreter
 {
     private static Dictionary<string, Func<Dictionary<string, object>, List<Node>, object>> FuncDict { get; } =
-        Assembly
-            .GetExecutingAssembly()
-            .GetTypes()
+        // Assembly
+        //     .GetExecutingAssembly()
+        //     .GetTypes()
+        AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(asm => asm.GetTypes())
             .SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.NonPublic))
             .Where(m => m.GetCustomAttribute<MethodAttribute>() is not null
                         && m.ReturnType == typeof(object)
@@ -43,7 +45,7 @@ public static class Interpreter
 
     public static void PrintEnv(Dictionary<string, object> env)
     {
-        Console.WriteLine("=======Env========");
+        Console.WriteLine(">>>>>>>>Env<<<<<<<<");
         foreach (var (key, value) in env)
         {
             Console.Write($"{key} --->  ");
@@ -67,6 +69,9 @@ public static class Interpreter
 
                     Console.WriteLine("]");
                     break;
+                case ArrayNode nodes:
+                    Console.WriteLine(Format(nodes));
+                    break;
             }
         }
     }
@@ -86,21 +91,23 @@ public static class Interpreter
     private static string FormatList(List<Node> args)
     {
         var sb = new StringBuilder();
-        sb.Append("[ ");
-        foreach (var node in args)
+        sb.Append('[');
+        for (var i = 0; i < args.Count; i++)
         {
+            var node = args[i];
             var str = node switch
             {
-                NumberNode num => $"{num.Value}, ",
-                StringNode s => $"{s.Value}, ",
-                BoolNode b => $"{b.Value}, ",
+                NumberNode num => $"{num.Value}",
+                StringNode s => $"{s.Value}",
+                BoolNode b => $"{b.Value}",
                 ArrayNode arr => FormatList(arr.Items),
                 _ => "None"
             };
             sb.Append(str);
+            if (i != args.Count - 1) sb.Append(", ");
         }
 
-        sb.Append("] ");
+        sb.Append(']');
         return sb.ToString();
     }
 
@@ -111,7 +118,7 @@ public static class Interpreter
     // 编写一个名为 check 的工具函数，当出现问题时，它将引发一个 TLLException 并附带一个有用的错误消息。
     // Add a catch statement to handle these errors.
     // 添加一个 catch 语句来处理这些错误。
-    private static void Check(bool value, string msg)
+    public static void Check(bool value, string msg)
     {
         if (!value) throw new TLLException(msg);
     }
@@ -151,7 +158,7 @@ public static class Interpreter
         throw new Exception("Unknown operation");
     }
 
-    private static T DoAs<T>(Dictionary<string, object> env, Node expr)
+    public static T DoAs<T>(Dictionary<string, object> env, Node expr)
     {
         var result = Do(env, expr);
         if (result is T t) return t;
@@ -183,12 +190,17 @@ public static class Interpreter
         return env.TryGetValue(x, out var value) ? value : throw new Exception("Unknown variable");
     }
 
+
     [Method]
-    private static object DoSet(Dictionary<string, object> env, List<Node> args)
+    public static object DoSet(Dictionary<string, object> env, List<Node> args)
     {
         Check(args.Count >= 2, $"Expected at least two argument, but got {args.Count}");
         var name = DoAs<string>(env, args[0]);
         var value = Do(env, args[1]);
+        if (value is ArrayNode arr
+            && arr.Items[0] is StringNode { Value: "func" }
+            && env.ContainsKey(name))
+            throw new TLLException($"Env already had a function value named {name}");
         env[name] = value;
         return value;
     }

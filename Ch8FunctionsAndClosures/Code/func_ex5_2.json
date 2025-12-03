@@ -1,0 +1,26 @@
+[
+  "seq",
+  [
+    "func",
+    "hello3",
+    [
+      "num"
+    ],
+    [
+      "print",
+      [
+        "get",
+        "num"
+      ]
+    ],
+    [
+      "print",
+      1
+    ]
+  ],
+  [
+    "call",
+    "hello3",
+    2
+  ]
+]
