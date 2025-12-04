@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ch8FunctionsAndClosures", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ch9Protocols", "Ch9Protocols\Ch9Protocols.csproj", "{33648A46-C1C8-4755-B1CA-CA7C0534CFA9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ch9Protocols.Tests", "Ch9Protocols.Tests\Ch9Protocols.Tests.csproj", "{1754B6C5-4853-40E4-869C-25769B4325BC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,5 +68,9 @@ Global
 		{33648A46-C1C8-4755-B1CA-CA7C0534CFA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{33648A46-C1C8-4755-B1CA-CA7C0534CFA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{33648A46-C1C8-4755-B1CA-CA7C0534CFA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1754B6C5-4853-40E4-869C-25769B4325BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1754B6C5-4853-40E4-869C-25769B4325BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1754B6C5-4853-40E4-869C-25769B4325BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1754B6C5-4853-40E4-869C-25769B4325BC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
