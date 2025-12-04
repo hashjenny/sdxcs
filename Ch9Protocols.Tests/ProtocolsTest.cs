@@ -50,12 +50,50 @@ public class ProtocolsTest
         var buffer = new NaiveIterator(["ab", "c"]);
         Assert.Equal("abc", NaiveIterator.Gather(buffer));
     }
-    
+
     [Fact]
     public void test_naive_buffer_empty_string()
     {
         var buffer = new NaiveIterator(["a", ""]);
         Assert.Equal("a", NaiveIterator.Gather(buffer));
+    }
+
+    #endregion
+
+    #region Ex1
+
+    [Fact]
+    public async Task TestEx1Async()
+    {
+        var exception = await Record.ExceptionAsync(() =>
+        {
+            using var ex = new Ex1ExpectException<ArgumentException>();
+            throw new InvalidOperationException("错误的异常类型");
+        });
+        Assert.IsType<AssertException>(exception);
+    }
+
+    [Fact]
+    public async Task TestEx1Async_2()
+    {
+        var exception = await Record.ExceptionAsync(() =>
+        {
+            using var ex = new Ex1ExpectException<InvalidOperationException>();
+            throw new InvalidOperationException("错误的异常类型");
+        });
+        Assert.IsType<InvalidOperationException>(exception);
+    }
+
+    [Fact]
+    public async Task TestEx1Async_3()
+    {
+        var exception = await Record.ExceptionAsync(() =>
+        {
+            using var ex = new Ex1ExpectException<DivideByZeroException>();
+            var _ = 1 + 2;
+            return null;
+        });
+        Assert.IsType<AssertException>(exception);
     }
 
     #endregion
