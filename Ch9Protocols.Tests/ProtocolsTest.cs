@@ -1,4 +1,6 @@
-﻿namespace Ch9Protocols.Tests;
+﻿using static Ch9Protocols.Env;
+
+namespace Ch9Protocols.Tests;
 
 public class ProtocolsTest
 {
@@ -13,31 +15,32 @@ public class ProtocolsTest
     [Fact]
     public void test_with_fixed_return_value()
     {
-        var f = Fake.FakeIt(nameof(Adder.Add), value: 99);
-        Assert.Equal(99, f.Call());
+        using var f = FakeIt();
+        Assert.Equal(2, Adder.Add(1, 2, 3, 4, 5, 6));
     }
 
     [Fact]
     public void test_fake_records_calls()
     {
-        var f = Fake.FakeIt(nameof(Adder.Add), value: 99);
-        Assert.Equal(99, f.Call(2, 3));
-        Assert.Equal(99, f.Call(3, 4));
+        using var f = FakeIt();
+
+        Assert.Equal(2, Adder.Add(1, 2, 3, 4, 5, 6));
+        Assert.Equal(2, Adder.Add(1, 2, 9));
         Assert.Equal(2, f.CallArgs.Count);
     }
 
-    [Fact]
-    public void test_fake_calculates_result()
-    {
-        var f = Fake.FakeIt(nameof(Adder.Add), arr => 10 * (int)arr[0] + (int)arr[1]);
-        Assert.Equal(23, f.Call(2, 3));
-    }
 
     [Fact]
     public void test_context()
     {
-        using var f = new ContextFake(nameof(Adder.Add), arr => 10 * (int)arr[0] + (int)arr[1]);
-        Assert.Equal(23, f.Call(2, 3));
+        using (var f = FakeIt())
+        {
+            Assert.Equal(2, Adder.Add(1, 2, 3));
+            Assert.Equal(2, Adder.Add(1, 2, 9));
+            Assert.Equal(2, f.CallArgs.Count);
+        }
+
+        Assert.Equal(6, Adder.Add(1, 2, 3));
     }
 
     #endregion

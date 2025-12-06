@@ -1,15 +1,17 @@
 ﻿using Ch9Protocols;
+using static Ch9Protocols.Env;
 
 using var ex2Timer = new Ex2Timer();
 
-using var f = new ContextFake(nameof(Adder.Add), arr => 10 * (int)arr[0] + (int)arr[1]);
-Console.WriteLine(f.Call(2, 3));
+using var f = FakeIt();
+var r = Adder.Add(2, 3, 4, 5);
+Console.WriteLine(r);
 
 Foo();
 Foo();
 Foo();
 
-
+return;
 
 [LogFile("log.txt")]
 void Foo()

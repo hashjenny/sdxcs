@@ -1,52 +1,50 @@
+using System.Collections.Concurrent;
 using System.Numerics;
+using System.Reflection;
+using HarmonyLib;
 
 namespace Ch9Protocols;
 
-public class Fake(Func<object[], object>? function = null, object? value = null)
+public class Fake : IDisposable
 {
-    public readonly List<object[]> CallArgs = [];
+    private static readonly ConcurrentDictionary<string, Fake> Instances = new();
 
-    protected static List<string> MethodNames { get; } =
-        AppDomain.CurrentDomain.GetAssemblies()
-            .SelectMany(asm => asm.GetTypes())
-            .SelectMany(t => t.GetMethods())
-            .Select(m => m.Name)
-            .ToList();
-
-    private Func<object[], object>? Function { get; } = function;
-    private object? Value { get; } = value;
-
-    public object? Call(params object[] args)
+    public Fake(MethodInfo original, MethodInfo patchMethod)
     {
-        CallArgs.Add(args);
-        return Function is not null ? Function(args) : Value;
+        ArgumentNullException.ThrowIfNull(original);
+        ArgumentNullException.ThrowIfNull(patchMethod);
+        Name = original.Name;
+
+        if (original.IsGenericMethodDefinition)
+            throw new NotSupportedException("原始方法是泛型定义，请先使用 MakeGenericMethod 构造闭合方法再传入 Fake。");
+
+        Instances[Name] = this;
+        Package = new Harmony($"com.fake.{Name}");
+
+        Package.Patch(original, new HarmonyMethod(patchMethod));
     }
 
-    public static Fake FakeIt(string name, Func<object[], object>? func = null, object? value = null)
-    {
-        if (!MethodNames.Contains(name)) throw new Exception($"could not find method named {name}");
+    public List<object[]> CallArgs { get; } = [];
 
-        var fake = new Fake(func, value);
-        return fake;
-    }
-}
-
-public class ContextFake : Fake, IDisposable
-{
-    public ContextFake(string name, Func<object[], object>? function = null, object? value = null) : base(function,
-        value)
-    {
-        if (!MethodNames.Contains(name)) throw new Exception($"could not find method named {name}");
-        Name = name;
-        Original = null;
-    }
-
-    public string Name { get; }
-    public Func<object[], object>? Original { get; set; }
+    private string Name { get; }
+    private Harmony Package { get; }
 
     public void Dispose()
     {
+        Instances.TryRemove(Name, out _);
+        Package.UnpatchAll($"com.fake.{Name}");
         Console.WriteLine($"The fake of {Name} is out.");
+    }
+
+    public static void RecordArgs(MethodBase? method, params object[] args)
+    {
+        if (method is null) return;
+
+        if (!Instances.TryGetValue(method.Name, out var fake)) return;
+
+        var copy = new object[args.Length];
+        for (var i = 0; i < args.Length; i++) copy[i] = args[i];
+        fake.CallArgs.Add(copy);
     }
 }
 
@@ -55,5 +53,26 @@ public static class Adder
     public static T Add<T>(params T[] args) where T : INumber<T>
     {
         return args.Aggregate((a, b) => a + b);
+    }
+}
+
+public static class FakeAdder
+{
+    public static bool PrefixAdd(ref int __result, int[] args, MethodBase __originalMethod)
+    {
+        Fake.RecordArgs(__originalMethod, args);
+        __result = 2;
+        return false; // 跳过原始实现
+    }
+}
+
+public static class Env
+{
+    private static readonly MethodInfo Method = typeof(Adder).GetMethod(nameof(Adder.Add))!;
+    public static readonly MethodInfo Patched = typeof(FakeAdder).GetMethod(nameof(FakeAdder.PrefixAdd))!;
+
+    public static Fake FakeIt()
+    {
+        return new Fake(Method.MakeGenericMethod(typeof(int)), Patched);
     }
 }
