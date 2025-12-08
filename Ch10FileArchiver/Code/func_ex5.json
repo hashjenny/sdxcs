@@ -1,0 +1,18 @@
+[
+  "func",
+  "hello2",
+  [
+    "num"
+  ],
+  [
+    "print",
+    [
+      "get",
+      "num"
+    ]
+  ],
+  [
+    "print",
+    1
+  ]
+]
