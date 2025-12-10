@@ -1,13 +1,16 @@
-﻿using System.IO.Abstractions.TestingHelpers;
-using static Ch10FileArchiver.FileArchiver;
+﻿using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
+using Xunit.Abstractions;
 
 namespace Ch10FileArchiver.Tests;
 
 public class FileArchiverTests
 {
     private readonly MockFileSystem fs;
+    private readonly FileSystem fs2;
+    private readonly ITestOutputHelper output;
 
-    public FileArchiverTests()
+    public FileArchiverTests(ITestOutputHelper outputHelper)
     {
         var files = new Dictionary<string, MockFileData>
         {
@@ -17,10 +20,27 @@ public class FileArchiverTests
         };
 
         fs = new MockFileSystem(files);
+        fs2 = new FileSystem();
+        output = outputHelper;
+
+        SourceDir = fs2.Path.Combine(AppContext.BaseDirectory, "SampleText");
+        BackupDir = fs2.Path.Combine(SourceDir, ".backup");
+        archiver = new FileArchiver(fs, sourceDir: ".");
+    }
+
+    private string SourceDir { get; }
+    private string BackupDir { get; }
+
+    private FileArchiver archiver { get; }
+
+
+    public void Dispose()
+    {
+        // if (fs2.Directory.Exists(SourceDir)) fs2.Directory.Delete(SourceDir);
     }
 
     [Fact]
-    public void TestNestedExample()
+    public void TestFileExist()
     {
         Assert.True(fs.File.Exists("a.txt"));
         Assert.True(fs.File.Exists("b.txt"));
@@ -41,29 +61,29 @@ public class FileArchiverTests
     [Fact]
     public void TestHashing()
     {
-        var results = HashAll(fs, ".");
+        var results = archiver.HashAll();
 
         List<string> files = ["a.txt", "b.txt", "sub_dir/c.txt"];
 
         Assert.Equal(results.Count, files.Count);
         foreach (var tuple in files.Zip(results))
         {
-            Assert.Equal(tuple.First, tuple.Second.FileName);
-            Assert.Equal(16, tuple.Second.FileHash.Length);
+            Assert.Equal(tuple.First, tuple.Second.Key);
+            Assert.Equal(16, tuple.Second.Value.Length);
         }
     }
 
     [Fact]
     public void TestChanging()
     {
-        var results = HashAll(fs, ".");
-        var a = results[0].FileName;
-        var hash = results[0].FileHash;
+        var results = archiver.HashAll();
+        var hash = results.GetValueOrDefault("a.txt");
+        Assert.NotNull(hash);
 
-        fs.File.AppendAllText(a, "append");
-        var results2 = HashAll(fs, ".");
-        var hash2 = results2[0].FileHash;
-        Assert.Equal("a.txt", a);
+        fs.File.AppendAllText("a.txt", "append");
+        var results2 = archiver.HashAll();
+        var hash2 = results2.GetValueOrDefault("a.txt");
+        Assert.NotNull(hash2);
         Assert.NotEqual(hash, hash2);
     }
 
@@ -72,17 +92,120 @@ public class FileArchiverTests
     {
         var archiver = new FileArchiver(fs);
         Assert.Equal(3, archiver.Manifest.Count);
-        archiver.Backup(fs);
+        archiver.Backup();
         var backupFiles = fs.Directory.GetFiles("./.backup");
         Assert.Equal(4, backupFiles.Length);
         Assert.Equal(3, backupFiles.Where(file => file.Contains(".bck")).ToList().Count);
 
-        fs.File.AppendAllText(archiver.Manifest[0].FileName, "bbbb");
+        fs.File.AppendAllText("a.txt", "bbbb");
         Assert.Equal(3, archiver.Manifest.Count);
-        archiver.Backup(fs);
+        archiver.Backup();
         var backup2 = fs.Directory.GetFiles("./.backup");
         Assert.Equal(6, backup2.Length);
         Assert.Equal(4, backup2.Where(file => file.Contains(".bck")).ToList().Count);
         Assert.Equal(2, backup2.Where(file => file.Contains(".csv")).ToList().Count);
+    }
+
+    [Fact]
+    public void TestFileArchiverCompare()
+    {
+        archiver.Backup();
+        output.WriteLine(fs.File.ReadAllText(fs.Path.Combine(archiver.BackupDir, "00000001.csv")));
+
+        fs.File.AppendAllText(fs.Path.Combine(archiver.SourceDir, "a.txt"), "hhh");
+        fs.File.Move(fs.Path.Combine(archiver.SourceDir, "b.txt"), "move.txt");
+        fs.File.Delete(fs.Path.Combine(archiver.SourceDir, "sub_dir/c.txt"));
+        fs.File.WriteAllText(fs.Path.Combine(archiver.SourceDir, "sub_dir/d.txt"), "ddd");
+        archiver.Backup();
+        output.WriteLine(new string('-', 30));
+        output.WriteLine(fs.File.ReadAllText(fs.Path.Combine(archiver.BackupDir, "00000002.csv")));
+
+        var (changeList, renameList, deleteList, addList) = archiver.CompareManifest("00000001.csv", "00000002.csv");
+        Assert.Single(changeList);
+        Assert.Equal("a.txt", changeList[0].FileName);
+        Assert.Single(renameList);
+        Assert.Equal("b.txt", renameList[0].FileName);
+        Assert.Single(deleteList);
+        Assert.Equal("sub_dir/c.txt", deleteList[0].FileName);
+        Assert.Single(addList);
+        Assert.Equal("sub_dir/d.txt", addList[0].FileName);
+    }
+
+    [Fact]
+    public void TestFileArchiverFromTo()
+    {
+        archiver.Backup();
+        output.WriteLine(fs.File.ReadAllText(Path.Combine(archiver.BackupDir, "00000001.csv")));
+        Assert.True(fs.File.Exists("a.txt"));
+        Assert.True(fs.File.Exists("b.txt"));
+        Assert.True(fs.File.Exists("sub_dir/c.txt"));
+        Assert.False(fs.File.Exists("sub_dir/d.txt"));
+        Assert.Equal("aaa", fs.File.ReadAllText("a.txt"));
+        Assert.Equal("bbb", fs.File.ReadAllText("b.txt"));
+        Assert.Equal("ccc", fs.File.ReadAllText("sub_dir/c.txt"));
+
+        fs.File.AppendAllText("a.txt", "hhh");
+        fs.File.Move("b.txt", "move.txt");
+        fs.File.Delete("sub_dir/c.txt");
+        fs.File.WriteAllText("sub_dir/d.txt", "ddd");
+
+        archiver.Backup();
+        output.WriteLine(new string('-', 30));
+        output.WriteLine(fs.File.ReadAllText(Path.Combine(archiver.BackupDir, "00000002.csv")));
+        Assert.True(fs.File.Exists("a.txt"));
+        Assert.False(fs.File.Exists("b.txt"));
+        Assert.True(fs.File.Exists("move.txt"));
+        Assert.False(fs.File.Exists("sub_dir/c.txt"));
+        Assert.True(fs.File.Exists("sub_dir/d.txt"));
+        Assert.Equal("aaahhh", fs.File.ReadAllText("a.txt"));
+        Assert.Equal("bbb", fs.File.ReadAllText("move.txt"));
+        Assert.Equal("ddd", fs.File.ReadAllText("sub_dir/d.txt"));
+
+        archiver.FromTo(archiver.SourceDir, "00000001.csv");
+        Assert.True(fs.File.Exists("a.txt"));
+        Assert.True(fs.File.Exists("b.txt"));
+        Assert.True(fs.File.Exists("sub_dir/c.txt"));
+        Assert.False(fs.File.Exists("sub_dir/d.txt"));
+        Assert.Equal("aaa", fs.File.ReadAllText("a.txt"));
+        Assert.Equal("bbb", fs.File.ReadAllText("b.txt"));
+        Assert.Equal("ccc", fs.File.ReadAllText("sub_dir/c.txt"));
+    }
+
+    [Fact]
+    public void TestFileArchiverHistory()
+    {
+        archiver.Backup();
+        Assert.True(fs.File.Exists("a.txt"));
+        Assert.Equal("aaa", fs.File.ReadAllText("a.txt"));
+
+        fs.File.Move("b.txt", "move.txt");
+        archiver.Backup();
+        Assert.True(fs.File.Exists("a.txt"));
+        
+        fs.File.AppendAllText("a.txt", "hhh");
+        archiver.Backup();
+        Assert.True(fs.File.Exists("a.txt"));
+        Assert.Equal("aaahhh", fs.File.ReadAllText("a.txt"));
+
+        fs.File.Delete("sub_dir/c.txt");
+        archiver.Backup();
+        Assert.True(fs.File.Exists("a.txt"));
+        Assert.Equal("aaahhh", fs.File.ReadAllText("a.txt"));
+
+        fs.File.AppendAllText("a.txt", "vvv");
+        archiver.Backup();
+        Assert.True(fs.File.Exists("a.txt"));
+        Assert.Equal("aaahhhvvv", fs.File.ReadAllText("a.txt"));
+        
+        fs.File.Delete("a.txt");
+        archiver.Backup();
+        Assert.False(fs.File.Exists("a.txt"));
+        
+        fs.File.WriteAllText("sub_dir/d.txt", "ddd");
+        archiver.Backup();
+        Assert.False(fs.File.Exists("a.txt"));
+
+        var history = archiver.GetFileHistory("a.txt");
+        output.WriteLine(history);
     }
 }
