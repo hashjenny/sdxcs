@@ -1,6 +1,4 @@
-﻿using System.IO.Abstractions;
-using Ch10FileArchiver;
-using Microsoft.CodeAnalysis.CSharp.Scripting;
+﻿using Ch10FileArchiver;
 
 var config = new ArchiverConfiguration
 {
@@ -29,10 +27,18 @@ var config = new ArchiverConfiguration
 // archiver.Backup();
 // archiver.CompareManifest("00000001.json", "00000002.json");
 
-var result = await CSharpScript.EvaluateAsync<int>(
-    """
-    var f = () => 1;
+// var result = await CSharpScript.EvaluateAsync<int>(
+//     """
+//     var f = () => 1;
+//     return f();
+//     """
+//     );
+// Console.WriteLine(result);
+
+File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "SampleText", "PreCommit.csx"), """
+    var f = () => false;
     return f();
-    """
-    );
-Console.WriteLine(result);
+    """);
+
+var archiver = new FileArchiver(config: config, sourceDir: "SampleText");
+await archiver.BackupAsync();

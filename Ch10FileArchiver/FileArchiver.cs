@@ -84,18 +84,17 @@ public class FileArchiver
     public string SourceDir { get; }
     public string BackupDir { get; }
 
+    public string[] CurrentFiles => Fs.Directory.GetFiles(SourceDir, "*", SearchOption.AllDirectories);
+
     private string Extension { get; }
 
-    public Dictionary<string, string> HashAll(IFileSystem? fs = null, string? sourceDir = null)
+    public Dictionary<string, string> HashAll()
     {
-        fs ??= Fs;
-        sourceDir ??= SourceDir;
-        var files = fs.Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
         var normalizedSkipDir = Fs.Path.GetFullPath(BackupDir).TrimEnd(Fs.Path.DirectorySeparatorChar);
         var results = new Dictionary<string, string>();
         using var sha = SHA256.Create();
         using var md5 = MD5.Create();
-        foreach (var file in files)
+        foreach (var file in CurrentFiles)
         {
             var fullFilePath = Fs.Path.GetFullPath(file);
             if (fullFilePath.StartsWith(normalizedSkipDir, StringComparison.OrdinalIgnoreCase) ||
@@ -114,8 +113,9 @@ public class FileArchiver
         return results;
     }
 
-    public void Backup()
+    public async Task BackupAsync()
     {
+        await PreCommitAsync();
         Manifest = HashAll();
         WriteManifest();
         CopyFiles();
@@ -273,8 +273,9 @@ public class FileArchiver
     // ex5
     // Write a program called from_to.py that takes a directory and a manifest file as command-line arguments, then adds, removes, and/or renames files in the directory to restore the state described in the manifest. The program should only perform file operations when it needs to, e.g., it should not delete a file and re-add it if the contents have not changed.
     // 编写一个名为 from_to.py 的程序，该程序接受一个目录和一个清单文件作为命令行参数，然后添加、删除和/或重命名目录中的文件，以恢复清单中描述的状态。该程序应仅在需要时执行文件操作，例如，如果内容没有变化，它不应删除文件并重新添加。
-    public void FromTo(string folder, string manifestFile)
+    public async Task FromToAsync(string folder, string manifestFile)
     {
+        await PreCommitAsync();
         var manifest = GetManifest(manifestFile);
         var fullFolder = Fs.Path.GetFullPath(folder);
         var current = HashAll();
@@ -308,7 +309,8 @@ public class FileArchiver
         var createdFlag = false;
         var deleteFlag = false;
         var oldValue = string.Empty;
-        var manifestFiles = Fs.Directory.GetFiles(BackupDir, $"*.{Extension}", SearchOption.TopDirectoryOnly).Order().ToArray();
+        var manifestFiles = Fs.Directory.GetFiles(BackupDir, $"*.{Extension}", SearchOption.TopDirectoryOnly).Order()
+            .ToArray();
         for (var i = 0; i < manifestFiles.Length; i++)
         {
             var manifestFile = manifestFiles[i];
@@ -348,18 +350,18 @@ public class FileArchiver
         sb.Append("latest state");
         return sb.ToString();
     }
-    
+
     // ex7
     // Modify backup.py to load and run a function called pre_commit from a file called pre_commit.py stored in the root directory of the files being backed up. If pre_commit returns True, the backup proceeds; if it returns False or raises an exception, no backup is created.
     // 修改 backup.py 以从正在备份文件的根目录中存储的名为 pre_commit.py 的文件加载并运行名为 pre_commit 的函数。如果 pre_commit 返回 True ，则备份继续；如果返回 False 或引发异常，则不创建备份。
-    // private async Task PreCommitAsync()
-    // {
-    //     var files = Fs.Directory.GetFiles()
-    //     if (await CSharpScript.EvaluateAsync<bool>())
-    //     {
-    //         
-    //     }
-    // }
+    private async Task PreCommitAsync()
+    {
+        if (CurrentFiles.Select(f => Fs.Path.GetFileName(f)).Any(f => f == "PreCommit.csx"))
+        {
+            var content = await Fs.File.ReadAllTextAsync(Path.Combine(SourceDir, "PreCommit.csx"));
+            if (!await CSharpScript.EvaluateAsync<bool>(content)) throw new Exception("pre commit error.");
+        }
+    }
 }
 
 public static class CsvTool
