@@ -26,6 +26,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ch10FileArchiver", "Ch10Fil
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ch10FileArchiver.Tests", "Ch10FileArchiver.Tests\Ch10FileArchiver.Tests.csproj", "{A0FA0688-85C9-429A-9236-3AB4913A4B36}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ch11HTMLValidator", "Ch11HTMLValidator\Ch11HTMLValidator.csproj", "{C92D9127-8D8C-4990-AF78-F70D9CE4DD8C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -84,5 +86,9 @@ Global
 		{A0FA0688-85C9-429A-9236-3AB4913A4B36}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0FA0688-85C9-429A-9236-3AB4913A4B36}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0FA0688-85C9-429A-9236-3AB4913A4B36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C92D9127-8D8C-4990-AF78-F70D9CE4DD8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C92D9127-8D8C-4990-AF78-F70D9CE4DD8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C92D9127-8D8C-4990-AF78-F70D9CE4DD8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C92D9127-8D8C-4990-AF78-F70D9CE4DD8C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
