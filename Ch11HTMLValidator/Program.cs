@@ -37,11 +37,57 @@ const string text3 = """
                      </html>
                      """;
 
+const string text4 = """
+                     <html>
+                     <body>
+                     <img src="" alt="1"/>
+                     <img src=""/>
+                     <figure><figcaption>2</figcaption></figure>
+                     <figure><figcaption>2</figcaption><figcaption>2</figcaption></figure>
+
+                     </body>
+                     </html>
+                     """;
+
+const string text5 = """
+                     <html>
+                     <body>
+                     <figure><img src="" alt="3"/><figcaption>3</figcaption></figure>
+                     <figure><img src="" alt="4"/><figcaption>5</figcaption></figure>
+                     </body>
+                     </html>
+                     """;
+
+const string text6 = """
+                     <html>
+                     <body>
+                     <h1>1</h1>
+                     <h2>2</h2>
+                     <h4>4</h4>
+                     </body>
+                     </html>
+                     """;
+
+const string text7 = """
+                     <html>
+                     <body>
+                     <h2>2</h2>
+                     <h3>3</h3>
+                     <h4>4</h4>
+                     </body>
+                     </html>
+                     """;
+
 var str = new string('=', 30);
-var parser = new HtmlParser(new HtmlParserOptions { IsKeepingSourceReferences = true });
+var parser = new HtmlParser(new HtmlParserOptions
+{
+    IsKeepingSourceReferences = true
+});
 using var doc = await parser.ParseDocumentAsync(text);
 using var doc2 = await parser.ParseDocumentAsync(text2);
 using var doc3 = await parser.ParseDocumentAsync(text3);
+using var doc6 = await parser.ParseDocumentAsync(text6);
+using var doc7 = await parser.ParseDocumentAsync(text7);
 
 Display(doc.DocumentElement);
 Console.WriteLine(str);
@@ -76,12 +122,30 @@ Console.WriteLine(str);
 var detector = new EmptyDetector();
 detector.Visit(doc.DocumentElement);
 foreach (var node in detector.EmptyNodes)
-{
-    Console.WriteLine($"name:{node.Name}, html: {node.OuterHtml}, line:{node.Line}"); 
-}
+    Console.WriteLine($"name:{node.Name}, html: {node.OuterHtml}, line:{node.Line}");
 Console.WriteLine(str);
 
+// ex4
+var flatten = new Flatten();
+flatten.Visit(doc3.DocumentElement);
+Console.WriteLine("Flatten List:");
+foreach (var (index, item) in flatten.Result.Index())
+    if (index != flatten.Result.Count - 1)
+        Console.Write($"{item.LocalName} - ");
+    else
+        Console.WriteLine(item.LocalName);
 
+Console.WriteLine(str);
+
+// ex5
+await new MultiChecker(text4, text5).ProcessAsync();
+Console.WriteLine(str);
+
+// ex6
+var headingChecker = new HeadingChecker();
+headingChecker.Visit(doc6.DocumentElement);
+var headingChecker2 = new HeadingChecker();
+headingChecker2.Visit(doc7.DocumentElement);
 
 return;
 
